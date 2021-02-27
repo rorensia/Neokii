@@ -180,17 +180,20 @@ static void ui_draw_track(UIState *s, const line_vertices_data &vd)
       track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
                                   COLOR_BLACK_ALPHA(100), COLOR_BLACK_ALPHA(50)); 
     } else {
-        if (fabs(s->scene.output_scale) > 0.90) {
-          torque_scale = (int)fabs(160*(float)s->scene.output_scale);
-          red_lvl = fmin(255, (torque_scale - 144 ) * 16);
-          blue_lvl = fmin(255, (160-torque_scale) * 16);
-        } else {
-          red_lvl = 0;
-          blue_lvl = 255;
-        }
+        // if (fabs(s->scene.output_scale) > 0.90) {
+        //   torque_scale = (int)fabs(160*(float)s->scene.output_scale);
+        //   red_lvl = fmin(255, (torque_scale - 144 ) * 16);
+        //   blue_lvl = fmin(255, (160-torque_scale) * 16);
+        // } else {
+        //   red_lvl = 0;
+        //   blue_lvl = 255;
+        // }
+        // track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
+        //           nvgRGBA(          red_lvl,  100,             blue_lvl, 230),
+        //           nvgRGBA((int)(0.8*red_lvl), 100, (int)(0.8* blue_lvl), 150));  
         track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
-                  nvgRGBA(          red_lvl,  100,             blue_lvl, 230),
-                  nvgRGBA((int)(0.8*red_lvl), 100, (int)(0.8* blue_lvl), 150));  
+                  nvgRGBA(0, 100, 200, 230),
+                  nvgRGBA(0, 100, 200, 150));  
     }
   } else {
     // Draw white vision track
