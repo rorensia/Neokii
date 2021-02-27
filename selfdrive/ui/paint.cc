@@ -157,6 +157,51 @@ static void ui_draw_line(UIState *s, const line_vertices_data &vd, NVGcolor *col
   nvgFill(s->vg);
 }
 
+//Atom(Conan)'s colored track, some codes come from Hoya
+static void ui_draw_track(UIState *s, const line_vertices_data &vd) 
+{
+  if (vd.cnt == 0) return;
+
+  nvgBeginPath(s->vg);
+  nvgMoveTo(s->vg, vd.v[0].x, vd.v[0].y);
+  for (int i=1; i<vd.cnt; i++) {
+    nvgLineTo(s->vg, vd.v[i].x, vd.v[i].y);
+  }
+  nvgClosePath(s->vg);
+
+  int steerOverride = s->scene.car_state.getSteeringPressed();
+  int torque_scale = 0;
+  int red_lvl = 0;
+  int blue_lvl = 0;
+
+  NVGpaint track_bg;
+  if (s->scene.controls_state.getEnabled()) {
+    if (steerOverride) {
+      track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
+                                  COLOR_BLACK_ALPHA(100), COLOR_BLACK_ALPHA(50)); 
+    } else {
+        if (fabs(s->scene.output_scale) > 0.90) {
+          torque_scale = (int)fabs(160*(float)s->scene.output_scale);
+          red_lvl = fmin(255, (torque_scale - 144 ) * 16);
+          blue_lvl = fmin(255, (160-torque_scale) * 16);
+        } else {
+          red_lvl = 0;
+          blue_lvl = 255;
+        }
+        track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h*.4,
+                  nvgRGBA(          red_lvl,  100,             blue_lvl, 230),
+                  nvgRGBA((int)(0.8*red_lvl), 100, (int)(0.8* blue_lvl), 150));  
+    }
+  } else {
+    // Draw white vision track
+    track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
+                                        COLOR_WHITE_ALPHA(80), COLOR_WHITE_ALPHA(50));
+  }
+
+  nvgFillPaint(s->vg, track_bg);
+  nvgFill(s->vg); 
+}
+
 static void draw_frame(UIState *s) {
   mat4 *out_mat;
   if (s->scene.frontview) {
@@ -188,11 +233,25 @@ static void draw_frame(UIState *s) {
   glBindVertexArray(0);
 }
 
+// Hoya's colored lane line
 static void ui_draw_vision_lane_lines(UIState *s) {
   const UIScene &scene = s->scene;
+  float red_lvl = 0.0;
+  float green_lvl = 0.0;
   // paint lanelines
   for (int i = 0; i < std::size(scene.lane_line_vertices); i++) {
-    NVGcolor color = nvgRGBAf(1.0, 1.0, 1.0, scene.lane_line_probs[i]);
+    red_lvl = 0.0;
+    green_lvl = 0.0;
+    if (scene.lane_line_probs[i] > 0.4){
+      red_lvl = 1.0 - (scene.lane_line_probs[i] - 0.4) * 2.5;
+      green_lvl = 1.0 ;
+    }
+    else {
+      red_lvl = 1.0 ;
+      green_lvl = 1.0 - (0.4 - scene.lane_line_probs[i]) * 2.5;
+    }
+    NVGcolor color = nvgRGBAf(red_lvl, green_lvl, 0, 1);
+    //NVGcolor color = nvgRGBAf(1.0, 1.0, 1.0, scene.lane_line_probs[i]);
     ui_draw_line(s, scene.lane_line_vertices[i], &color, nullptr);
   }
 
@@ -203,9 +262,10 @@ static void ui_draw_vision_lane_lines(UIState *s) {
   }
 
   // paint path
-  NVGpaint track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
-                                        COLOR_WHITE, COLOR_WHITE_ALPHA(0));
-  ui_draw_line(s, scene.track_vertices, nullptr, &track_bg);
+  ui_draw_track(s, scene.track_vertices);
+  //NVGpaint track_bg = nvgLinearGradient(s->vg, s->fb_w, s->fb_h, s->fb_w, s->fb_h * .4,
+  //                                      COLOR_WHITE, COLOR_WHITE_ALPHA(0));
+  //ui_draw_line(s, scene.track_vertices, nullptr, &track_bg);
 }
 
 // Draw all world space objects.
